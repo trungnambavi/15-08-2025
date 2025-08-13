@@ -21,7 +21,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     'Ước gì được nấy nhé🎂✨',
     'Còn nữa đợi xíu'
   ];
-  const FONT = "600 200px 'Avenir','Helvetica Neue',Arial,sans-serif";
+  const FONT = "600 100px 'Avenir','Helvetica Neue',Arial,sans-serif";
   const SAMPLE_GAP = 6, MAX_PARTICLES = 2600;
   const BALLOON_COUNT = 15, CAKE_FLOAT_COUNT = 10;
 
@@ -148,4 +148,5 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
   loop(); runSequence();
+  
 }
