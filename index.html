@@ -9,9 +9,10 @@
     --bg:#f6f7fb; --card:#fff; --text:#111; --muted:#777;
     --accent:#ff6b81; --shadow1: 10px 10px 30px rgba(0,0,0,.08);
     --shadow2: -8px -8px 24px rgba(255,255,255,.9);
-    --radius: 22px; --pastel1:#ffe4ec; --pastel2:#ffdff7;
+    --radius: 22px;
   }
-  *{box-sizing:border-box} html,body{height:100%;margin:0}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden}
   body {
     font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
     background: var(--bg); display:grid; place-items:center;
@@ -20,6 +21,7 @@
   .card { background:var(--card); border-radius:var(--radius);
     padding:28px; box-shadow:var(--shadow1),var(--shadow2);
     display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center;
+    max-width: 90vw;
   }
   .photo { background:#fff; border-radius:18px; padding:12px; position:relative;
     box-shadow: inset 6px 6px 16px rgba(0,0,0,.05), inset -6px -6px 16px rgba(255,255,255,.85);
@@ -40,15 +42,59 @@
   .btn.alt { background:#f1f2f6 }
   .btn.ok { color:var(--accent); font-weight:700 }
   .hint { text-align:center; color:var(--muted); font-size:14px }
-  #matrixWrap { position:fixed; inset:0; display:none; place-items:center;
-    background: radial-gradient(1200px 800px at 50% 60%, var(--pastel2), var(--pastel1));
+  
+  #matrixWrap {
+    position:fixed; inset:0; display:none; place-items:center;
+    background: transparent;
+    overflow: hidden;
   }
-  #birthdayCanvas { width:100vw; height:100vh; display:block; }
-  .continue-bar { position:fixed; left:0; right:0; bottom:18px; display:none; justify-content:center; }
+  video.bg-video {
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    object-fit:cover; /* nền che toàn màn hình */
+    z-index:-1;
+    background:#000;
+  }
+  #birthdayCanvas { width:100%; height:100%; display:block; }
+  .continue-bar { position:fixed; left:0; right:0; bottom:18px; display:none; justify-content:center; z-index:10; }
   .continue-btn { background:#fff; border:0; padding:12px 18px; border-radius:999px; font-weight:600;
     font-size:16px; box-shadow:var(--shadow1),var(--shadow2); cursor:pointer;
   }
-  @media (max-width:720px){ .card{ grid-template-columns:1fr; } }
+  
+  #video2Wrap {
+    position:fixed;
+    inset:0;
+    display:none;
+    background:#000;
+    z-index:9999;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  #video2Wrap video {
+    max-width:100vw;
+    max-height:100vh;
+    object-fit:contain; /* giữ tỉ lệ 3x4, không bị cắt */
+    background:#000;
+  }
+  .after-video-buttons {
+    position:absolute;
+    bottom:30px;
+    display:flex;
+    gap:12px;
+    z-index:10000;
+  }
+  .after-video-buttons button {
+    background:#fff; border:0; padding:10px 16px;
+    border-radius:8px; font-weight:600; cursor:pointer;
+    box-shadow:var(--shadow1),var(--shadow2);
+  }
+  
+  @media (max-width:720px){
+    .card{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -82,12 +128,25 @@
 </div>
 
 <section id="matrixWrap">
+  <video id="bgVideo" class="bg-video" autoplay loop preload="auto" playsinline>
+    <source src="video.mp4" type="video/mp4">
+  </video>
   <canvas id="birthdayCanvas"></canvas>
-  <audio id="bgm" src="happy.mp3" preload="auto" loop></audio>
   <div class="continue-bar" id="continueBar">
     <button class="continue-btn" id="continueBtn">Tiếp tục ➜</button>
   </div>
 </section>
+
+<div id="video2Wrap">
+  <video id="video2" autoplay preload="auto" playsinline>
+    <source src="video2.mp4" type="video/mp4">
+  </video>
+  <div class="after-video-buttons" id="afterVideoBtns" style="display:none;">
+    <button id="replayBg">Replay nền</button>
+    <button id="replayVid">Replay video</button>
+    <button id="logout">Đăng xuất</button>
+  </div>
+</div>
 
 <script>
 const PASSCODE = "15082006";
@@ -95,7 +154,11 @@ let buffer = '';
 const display = document.getElementById('display');
 const gateWrap = document.getElementById('gateWrap');
 const matrixWrap = document.getElementById('matrixWrap');
-const bgm = document.getElementById('bgm');
+const bgVideo = document.getElementById('bgVideo');
+const video2Wrap = document.getElementById('video2Wrap');
+const video2 = document.getElementById('video2');
+
+function renderDisplay(){ display.textContent = buffer || '\u00A0'; }
 
 document.querySelector('.keypad').addEventListener('click', e=>{
   const key = e.target.dataset.key;
@@ -112,12 +175,13 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Backspace'){ buffer = buffer.slice(0,-1); renderDisplay(); }
   if(e.key==='Enter'){ verify(); }
 });
-function renderDisplay(){ display.textContent = buffer || '\u00A0'; }
+
 function verify(){
   if(buffer === PASSCODE){
     gateWrap.style.display = 'none';
     matrixWrap.style.display = 'grid';
-    bgm.volume = 0.8; bgm.play().catch(()=>{});
+    bgVideo.currentTime = 0;
+    bgVideo.play().catch(()=>{});
     startBirthdayMatrix({
       canvasId: 'birthdayCanvas',
       onFinished: ()=> document.getElementById('continueBar').style.display = 'flex'
@@ -127,12 +191,50 @@ function verify(){
     setTimeout(()=>{ display.style.animation=''; display.style.color=''; }, 360);
   }
 }
-const style = document.createElement('style');
-style.textContent = `@keyframes shake{10%{transform:translateX(-4px)}30%{transform:translateX(4px)}50%{transform:translateX(-3px)}70%{transform:translateX(3px)}90%{transform:translateX(-2px)}100%{transform:translateX(0)}}`;
-document.head.appendChild(style);
 
 document.getElementById('continueBtn').addEventListener('click', ()=>{
-  window.location.href = 'https://trungnambavi.github.io/chigiongtinhyeu/';
+  // Dừng nền và canvas
+  bgVideo.pause();
+  document.getElementById('birthdayCanvas').style.display = 'none';
+  matrixWrap.style.display = 'none';
+
+  // Phát video2
+  video2Wrap.style.display = 'flex';
+  video2.currentTime = 0;
+  video2.play().catch(()=>{});
+});
+
+video2.addEventListener('ended', ()=>{
+  document.getElementById('afterVideoBtns').style.display = 'flex';
+});
+
+document.getElementById('replayBg').addEventListener('click', ()=>{
+  video2.pause();
+  video2Wrap.style.display = 'none';
+  document.getElementById('birthdayCanvas').style.display = 'block';
+  matrixWrap.style.display = 'grid';
+  document.getElementById('continueBar').style.display = 'none';
+  bgVideo.currentTime = 0;
+  bgVideo.play().catch(()=>{});
+  startBirthdayMatrix({
+    canvasId: 'birthdayCanvas',
+    onFinished: ()=> document.getElementById('continueBar').style.display = 'flex'
+  });
+});
+
+document.getElementById('replayVid').addEventListener('click', ()=>{
+  document.getElementById('afterVideoBtns').style.display = 'none';
+  video2.currentTime = 0;
+  video2.play().catch(()=>{});
+});
+
+document.getElementById('logout').addEventListener('click', ()=>{
+  bgVideo.pause();
+  video2.pause();
+  video2Wrap.style.display = 'none';
+  gateWrap.style.display = 'block';
+  buffer = '';
+  renderDisplay();
 });
 </script>
 <script src="birthday-matrix.js"></script>
