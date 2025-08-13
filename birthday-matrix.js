@@ -14,6 +14,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
   }
   resize(); window.addEventListener('resize', resize);
 
+  // --- THUẬT TOÁN MATRIX GIỐNG TRƯỚC ---
   const TEXTS = [
     '15-8-2006 💖',
     'Chúc em luôn xinh đẹp hihi',
@@ -56,6 +57,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
       const t=targets[i]; particles[i].spawn(t.x,t.y,t.color);
     }
   }
+
   function setTargetsFromText(text){
     const off=document.createElement('canvas'), octx=off.getContext('2d');
     off.width=W; off.height=H; octx.scale(DPR,DPR);
@@ -72,6 +74,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     }
     applyTargets(targets);
   }
+
   function setTargetsFromCakeImage(img){
     const off=document.createElement('canvas'), octx=off.getContext('2d');
     off.width=W; off.height=H;
@@ -92,6 +95,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     applyTargets(targets);
   }
 
+  // Floaters
   const floaters=[];
   function spawnBalloon(){ return {type:'balloon',x:Math.random()*innerWidth,y:innerHeight+200,r:18+Math.random()*10,
     vx:(Math.random()-0.5)*0.4,vy:-(0.6+Math.random()*0.8),hue:(300+Math.random()*120)|0,
@@ -125,6 +129,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     }
   }
 
+  // --- LOOP ---
   function loop(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     updateFloaters();
@@ -132,6 +137,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     requestAnimationFrame(loop);
   }
 
+  // --- CAKE SVG ---
   function svgCakeImage(){
     const svg=`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='320'> ... </svg>`;
     const img=new Image(); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
@@ -148,5 +154,53 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
   loop(); runSequence();
-  
+
+  // --- MOBILE ZOOM & PAN CANVAS ---
+  (function(){
+    let scale = 1, lastScale = 1, posX = 0, posY = 0, lastX = 0, lastY = 0;
+    let isDragging = false, startX, startY, lastDist = 0;
+
+    function setTransform() {
+      canvas.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+    }
+
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - lastX;
+        startY = e.touches[0].clientY - lastY;
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        const dx = e.touches[1].clientX - e.touches[0].clientX;
+        const dy = e.touches[1].clientY - e.touches[0].clientY;
+        lastDist = Math.hypot(dx, dy);
+      }
+    });
+
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (e.touches.length === 1 && isDragging) {
+        posX = e.touches[0].clientX - startX;
+        posY = e.touches[0].clientY - startY;
+        lastX = posX; lastY = posY;
+        setTransform();
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[1].clientX - e.touches[0].clientX;
+        const dy = e.touches[1].clientY - e.touches[0].clientY;
+        const dist = Math.hypot(dx, dy);
+        scale = Math.max(0.5, Math.min(3, lastScale * (dist / lastDist)));
+        setTransform();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', e => {
+      if (e.touches.length === 0) {
+        lastScale = scale;
+        lastX = posX;
+        lastY = posY;
+        isDragging = false;
+      }
+    });
+  })();
+
 }
