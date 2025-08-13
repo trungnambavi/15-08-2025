@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhập pass đi người đẹp</title>
+<style>
+  :root {
+    --bg:#f6f7fb; --card:#fff; --text:#111; --muted:#777;
+    --accent:#ff6b81; --shadow1: 10px 10px 30px rgba(0,0,0,.08);
+    --shadow2: -8px -8px 24px rgba(255,255,255,.9);
+    --radius: 22px; --pastel1:#ffe4ec; --pastel2:#ffdff7;
+  }
+  *{box-sizing:border-box} html,body{height:100%;margin:0}
+  body {
+    font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: var(--bg); display:grid; place-items:center;
+  }
+  h1 { text-align:center; margin:24px 0; font-size: clamp(24px,4vw,42px); }
+  .card { background:var(--card); border-radius:var(--radius);
+    padding:28px; box-shadow:var(--shadow1),var(--shadow2);
+    display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:center;
+  }
+  .photo { background:#fff; border-radius:18px; padding:12px; position:relative;
+    box-shadow: inset 6px 6px 16px rgba(0,0,0,.05), inset -6px -6px 16px rgba(255,255,255,.85);
+    display:flex; align-items:center; justify-content:center; aspect-ratio:1/1; overflow:hidden;
+  }
+  .photo img { width:100%; height:100%; object-fit:cover; border-radius:14px; }
+  .photo .hearts { position:absolute; right:10px; bottom:10px; font-size:22px; color:var(--accent) }
+  .panel { display:flex; flex-direction:column; gap:14px; }
+  .display { background:#fff; border-radius:14px; padding:14px 18px; font-size:22px; letter-spacing:6px;
+    text-align:center; box-shadow:inset 6px 6px 14px rgba(0,0,0,.06), inset -6px -6px 18px rgba(255,255,255,.9);
+    min-height:54px; user-select:none;
+  }
+  .keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .btn { background:#fff; border:0; border-radius:16px; padding:18px; font-size:20px; cursor:pointer;
+    box-shadow:var(--shadow1),var(--shadow2); transition:transform .06s ease, box-shadow .12s ease;
+  }
+  .btn:active { transform:translateY(1px) scale(.99); }
+  .btn.alt { background:#f1f2f6 }
+  .btn.ok { color:var(--accent); font-weight:700 }
+  .hint { text-align:center; color:var(--muted); font-size:14px }
+  #matrixWrap { position:fixed; inset:0; display:none; place-items:center;
+    background: radial-gradient(1200px 800px at 50% 60%, var(--pastel2), var(--pastel1));
+  }
+  #birthdayCanvas { width:100vw; height:100vh; display:block; }
+  .continue-bar { position:fixed; left:0; right:0; bottom:18px; display:none; justify-content:center; }
+  .continue-btn { background:#fff; border:0; padding:12px 18px; border-radius:999px; font-weight:600;
+    font-size:16px; box-shadow:var(--shadow1),var(--shadow2); cursor:pointer;
+  }
+  @media (max-width:720px){ .card{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="gateWrap">
+  <h1>NHẬP PASS ĐI NGƯỜI ĐẸP</h1>
+  <div class="card">
+    <div class="photo">
+      <img src="girl.png" alt="Cute girl">
+      <div class="hearts">❤︎ ❤︎</div>
+    </div>
+    <div class="panel">
+      <div class="display" id="display">&nbsp;</div>
+      <div class="keypad">
+        <button class="btn" data-key="1">1</button>
+        <button class="btn" data-key="2">2</button>
+        <button class="btn" data-key="3">3</button>
+        <button class="btn" data-key="4">4</button>
+        <button class="btn" data-key="5">5</button>
+        <button class="btn" data-key="6">6</button>
+        <button class="btn" data-key="7">7</button>
+        <button class="btn" data-key="8">8</button>
+        <button class="btn" data-key="9">9</button>
+        <button class="btn ok" id="ok">✓</button>
+        <button class="btn" data-key="0">0</button>
+        <button class="btn alt" id="del">✕</button>
+      </div>
+      <div class="hint">Gợi ý: ngày sinh của pé yêu 😉</div>
+    </div>
+  </div>
+</div>
+
+<section id="matrixWrap">
+  <canvas id="birthdayCanvas"></canvas>
+  <audio id="bgm" src="happy.mp3" preload="auto" loop></audio>
+  <div class="continue-bar" id="continueBar">
+    <button class="continue-btn" id="continueBtn">Tiếp tục ➜</button>
+  </div>
+</section>
+
+<script>
+const PASSCODE = "15082006";
+let buffer = '';
+const display = document.getElementById('display');
+const gateWrap = document.getElementById('gateWrap');
+const matrixWrap = document.getElementById('matrixWrap');
+const bgm = document.getElementById('bgm');
+
+document.querySelector('.keypad').addEventListener('click', e=>{
+  const key = e.target.dataset.key;
+  if(!key) return;
+  if(buffer.length < 12) buffer += key;
+  renderDisplay();
+});
+document.getElementById('del').addEventListener('click', ()=>{
+  buffer = buffer.slice(0,-1); renderDisplay();
+});
+document.getElementById('ok').addEventListener('click', verify);
+document.addEventListener('keydown', e=>{
+  if(/^[0-9]$/.test(e.key)){ buffer += e.key; renderDisplay(); }
+  if(e.key==='Backspace'){ buffer = buffer.slice(0,-1); renderDisplay(); }
+  if(e.key==='Enter'){ verify(); }
+});
+function renderDisplay(){ display.textContent = buffer || '\u00A0'; }
+function verify(){
+  if(buffer === PASSCODE){
+    gateWrap.style.display = 'none';
+    matrixWrap.style.display = 'grid';
+    bgm.volume = 0.8; bgm.play().catch(()=>{});
+    startBirthdayMatrix({
+      canvasId: 'birthdayCanvas',
+      onFinished: ()=> document.getElementById('continueBar').style.display = 'flex'
+    });
+  } else {
+    display.style.animation = 'shake .35s'; display.style.color = 'crimson';
+    setTimeout(()=>{ display.style.animation=''; display.style.color=''; }, 360);
+  }
+}
+const style = document.createElement('style');
+style.textContent = `@keyframes shake{10%{transform:translateX(-4px)}30%{transform:translateX(4px)}50%{transform:translateX(-3px)}70%{transform:translateX(3px)}90%{transform:translateX(-2px)}100%{transform:translateX(0)}}`;
+document.head.appendChild(style);
+
+document.getElementById('continueBtn').addEventListener('click', ()=>{
+  window.location.href = 'https://trungnambavi.github.io/chigiongtinhyeu/';
+});
+</script>
+<script src="birthday-matrix.js"></script>
+</body>
+</html>
