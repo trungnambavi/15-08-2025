@@ -23,7 +23,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
   ];
   const FONT = "600 100px 'Avenir','Helvetica Neue',Arial,sans-serif";
   const SAMPLE_GAP = 6, MAX_PARTICLES = 2600;
-  const BALLOON_COUNT = 18, CAKE_FLOAT_COUNT = 10;
+  const BALLOON_COUNT = 15, CAKE_FLOAT_COUNT = 10;
 
   class Particle {
     constructor(){ this.alive=false; this.friction=0.85; }
@@ -61,7 +61,7 @@ function startBirthdayMatrix({ canvasId = 'birthdayCanvas', onFinished = () => {
     off.width=W; off.height=H; octx.scale(DPR,DPR);
     octx.fillStyle='rgba(255,255,255,1)'; octx.textAlign='center'; octx.textBaseline='middle';
     octx.font=FONT; octx.shadowColor='rgba(255,182,193,0.9)'; octx.shadowBlur=12;
-    octx.fillText(text, W/(2*DPR), H/(2*DPR));
+    octx.fillText(text, W/(2*DPR), (H/(2*DPR)) + 150);
     const img=octx.getImageData(0,0,off.width,off.height).data;
     const targets=[];
     for(let y=0;y<H;y+=SAMPLE_GAP){
